@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GIB Partner Applications Admin</title>
+    <link rel="stylesheet" href="/css/partners.css" />
+    <style>
+        .admin-wrapper {
+            padding: 2.5rem 0;
+        }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: #ffffff;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 0.65rem 0.75rem;
+            border-bottom: 1px solid #eceff1;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .admin-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .admin-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge-pending {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            padding: 0.4rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            background: #ffffff;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .btn-secondary.danger {
+            border-color: #e53935;
+            color: #e53935;
+        }
+
+        .admin-note {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.75rem;
+        }
+
+        .admin-empty {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .admin-auth {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ffffff;
+            padding: 0.5rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+        }
+
+        #admin-token-input {
+            border: none;
+            outline: none;
+            font-size: 0.85rem;
+            min-width: 180px;
+        }
+
+        .admin-tabs {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .admin-tab {
+            padding: 0.4rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background: transparent;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .admin-tab.active {
+            background: #ffffff;
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .reject-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .reject-modal {
+            background: #ffffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+            border: 1px solid var(--color-border);
+        }
+
+        .reject-modal h2 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .reject-modal p {
+            font-size: 0.9rem;
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+        }
+
+        .reject-modal textarea {
+            width: 100%;
+            min-height: 80px;
+            resize: vertical;
+            padding: 0.6rem 0.7rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--color-border);
+        }
+
+        .reject-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.9rem;
+        }
+
+        .admin-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .admin-filters input {
+            padding: 0.4rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            font-size: 0.85rem;
+        }
+
+        .danger-text {
+            color: #e53935;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="https://groveintel.com" class="logo-link">
+                <img src="/assets/img_header_logo.png" alt="Grove Intelligence Bureau" class="logo-image" />
+            </a>
+            <nav class="nav-links">
+                <a href="/partners">Back to Partner Page</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="section-light">
+        <div class="container admin-wrapper">
+            <div class="admin-header">
+                <div>
+                    <h1>Partner Applications</h1>
+                    <p class="admin-note">Secure internal view of GIB Partner applications. Approvals will later create
+                        affiliates in Tapfiliate.</p>
+                </div>
+                <div class="admin-auth" id="admin-auth">
+                    <input type="password" id="admin-token-input" placeholder="Admin token" />
+                    <button class="btn-secondary" type="button" id="admin-signin-btn">Sign in</button>
+                </div>
+            </div>
+
+            <div class="admin-tabs" id="admin-tabs" style="display:none;">
+                <button type="button" class="admin-tab active" data-status="pending">Pending</button>
+                <button type="button" class="admin-tab" data-status="approved">Approved</button>
+                <button type="button" class="admin-tab" data-status="rejected">Rejected</button>
+                <button type="button" class="admin-tab" data-status="logs">Logs</button>
+                <button class="btn-secondary" type="button" id="refresh-btn">Refresh</button>
+                <button class="btn-secondary danger" type="button" id="clear-all-btn">Clear All</button>
+            </div>
+
+            <div class="admin-filters" id="admin-filters" style="display:none;">
+                <input type="text" id="filter-email" placeholder="Filter by email" />
+                <input type="text" id="filter-country" placeholder="Filter by country" />
+            </div>
+
+            <div id="admin-table-wrapper"></div>
+            <p id="admin-message" class="form-message"></p>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>&copy; <span id="year"></span> Grove Intelligence Bureau. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        const API_BASE = '/api';
+        const tableWrapper = document.getElementById('admin-table-wrapper');
+        const messageEl = document.getElementById('admin-message');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const adminAuth = document.getElementById('admin-auth');
+        const adminTabs = document.getElementById('admin-tabs');
+        const adminTokenInput = document.getElementById('admin-token-input');
+        const adminSigninBtn = document.getElementById('admin-signin-btn');
+        const tabs = document.querySelectorAll('.admin-tab');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const filtersBar = document.getElementById('admin-filters');
+        const filterEmailInput = document.getElementById('filter-email');
+        const filterCountryInput = document.getElementById('filter-country');
+
+        let currentStatus = 'pending';
+        let adminToken = '';
+
+        function showToast(message, type = 'info') {
+            messageEl.textContent = message;
+            messageEl.className = 'form-message ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
+        }
+
+        function setAdminUIAuthenticated(isAuthed) {
+            if (isAuthed) {
+                adminAuth.style.display = 'none';
+                adminTabs.style.display = 'flex';
+                // filters visibility is controlled by setActiveTab
+            } else {
+                adminAuth.style.display = 'flex';
+                adminTabs.style.display = 'none';
+                // hide filters when not authenticated
+                filtersBar.style.display = 'none';
+                tableWrapper.innerHTML = '';
+            }
+        }
+
+        async function apiFetch(path, options = {}) {
+            const headers = options.headers || {};
+            headers['Authorization'] = `Bearer ${adminToken}`;
+            headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+
+            const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+            if (res.status === 401) {
+                setAdminUIAuthenticated(false);
+                throw new Error('Unauthorized. Check your admin token.');
+            }
+
+            const data = await res.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Request failed');
+            }
+
+            return data;
+        }
+
+        async function loadApplications() {
+            messageEl.textContent = '';
+            tableWrapper.innerHTML = '<p class="admin-note">Loading applications...</p>';
+
+            try {
+                if (currentStatus === 'logs') {
+                    const data = await apiFetch('/admin-logs');
+                    const logs = data.logs || [];
+
+                    if (logs.length === 0) {
+                        tableWrapper.innerHTML = '<p class="admin-empty">No admin logs yet.</p>';
+                        filtersBar.style.display = 'none';
+                        return;
+                    }
+
+                    filtersBar.style.display = 'none';
+
+                    const rows = logs.map(log => {
+                        const when = new Date(log.created_at).toLocaleString();
+                        return `
+                          <tr>
+                            <td>${log.id}</td>
+                            <td>${when}</td>
+                            <td>${log.admin_identifier || ''}</td>
+                            <td>${log.action}</td>
+                            <td>${log.application_id || ''}</td>
+                            <td>${log.details || ''}</td>
+                          </tr>
+                        `;
+                    }).join('');
+
+                    tableWrapper.innerHTML = `
+                      <table class="admin-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>When</th>
+                            <th>Admin</th>
+                            <th>Action</th>
+                            <th>Application ID</th>
+                            <th>Details</th>
+                          </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                      </table>
+                    `;
+                    return;
+                }
+
+                const data = await apiFetch(`/partner-applications/${currentStatus}`);
+                let apps = data.applications || [];
+
+                // Apply simple client-side filters for email and country
+                const emailFilter = filterEmailInput.value.trim().toLowerCase();
+                const countryFilter = filterCountryInput.value.trim().toLowerCase();
+
+                if (emailFilter || countryFilter) {
+                    apps = apps.filter(app => {
+                        const emailMatch = emailFilter ? (app.email || '').toLowerCase().includes(emailFilter) : true;
+                        const countryMatch = countryFilter ? (app.country || '').toLowerCase().includes(countryFilter) : true;
+                        return emailMatch && countryMatch;
+                    });
+                }
+
+                if (apps.length === 0) {
+                    tableWrapper.innerHTML = `<p class="admin-empty">No ${currentStatus} applications.</p>`;
+                    return;
+                }
+
+                const rows = apps.map(app => {
+                    const submitted = new Date(app.created_at).toLocaleString();
+                    const approved = app.approved_at ? new Date(app.approved_at).toLocaleString() : '';
+                    const statusBadge = `<span class="badge-pending">${app.status}</span>`;
+
+                    let actions = '';
+                    if (currentStatus === 'pending') {
+                        actions = `
+                          <div class="admin-actions">
+                            <button class="btn-primary" type="button" data-action="approve" data-id="${app.id}">Approve</button>
+                            <button class="btn-secondary danger" type="button" data-action="reject" data-id="${app.id}">Reject</button>
+                          </div>
+                        `;
+                    }
+
+                    return `
+                      <tr>
+                        <td>${app.id}</td>
+                        <td>${app.name}<br /><span style="font-size:0.8rem;color:#666;">${app.email}</span></td>
+                        <td>${app.country || ''}</td>
+                        <td>${app.platform || ''}</td>
+                        <td>${submitted}</td>
+                        <td>${approved}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actions}</td>
+                      </tr>
+                    `;
+                }).join('');
+
+                tableWrapper.innerHTML = `
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name / Email</th>
+                        <th>Country</th>
+                        <th>Platforms</th>
+                        <th>Submitted</th>
+                        <th>Approved / Updated</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                  </table>
+                `;
+
+                const actionButtons = tableWrapper.querySelectorAll('[data-action]');
+                actionButtons.forEach(btn => {
+                    btn.addEventListener('click', handleActionClick);
+                });
+            } catch (err) {
+                showToast(err.message || 'Error loading applications.', 'error');
+                tableWrapper.innerHTML = '';
+            }
+        }
+
+        function openRejectModal(applicationId) {
+            const backdrop = document.createElement('div');
+            backdrop.className = 'reject-modal-backdrop';
+
+            const modal = document.createElement('div');
+            modal.className = 'reject-modal';
+            modal.innerHTML = `
+              <h2>Reject Application #${applicationId}</h2>
+              <p>You can optionally provide a reason for rejection. This will be stored in the admin log.</p>
+              <textarea id="reject-reason" placeholder="Reason for rejection (optional)"></textarea>
+              <div class="reject-modal-actions">
+                <button type="button" class="btn-secondary" id="reject-cancel">Cancel</button>
+                <button type="button" class="btn-primary" id="reject-confirm">Reject</button>
+              </div>
+            `;
+
+            backdrop.appendChild(modal);
+            document.body.appendChild(backdrop);
+
+            const reasonInput = modal.querySelector('#reject-reason');
+            const cancelBtn = modal.querySelector('#reject-cancel');
+            const confirmBtn = modal.querySelector('#reject-confirm');
+
+            function closeModal() {
+                document.body.removeChild(backdrop);
+            }
+
+            cancelBtn.addEventListener('click', () => {
+                closeModal();
+            });
+
+            backdrop.addEventListener('click', (evt) => {
+                if (evt.target === backdrop) {
+                    closeModal();
+                }
+            });
+
+            confirmBtn.addEventListener('click', async () => {
+                const reason = reasonInput.value.trim();
+                confirmBtn.disabled = true;
+
+                try {
+                    await apiFetch(`/partner-applications/${applicationId}/reject`, {
+                        method: 'POST',
+                        body: JSON.stringify({ reason })
+                    });
+                    showToast('Application rejected.', 'success');
+                    closeModal();
+                    loadApplications();
+                } catch (err) {
+                    confirmBtn.disabled = false;
+                    showToast(err.message || 'Action failed.', 'error');
+                }
+            });
+        }
+
+        function openClearAllModal() {
+            const backdrop = document.createElement('div');
+            backdrop.className = 'reject-modal-backdrop';
+
+            const modal = document.createElement('div');
+            modal.className = 'reject-modal';
+            modal.innerHTML = `
+              <h2>Clear All Applications</h2>
+              <p class="danger-text">This will permanently delete all partner applications.</p>
+              <p>Before deleting, we will download a JSON backup file to your computer. This action cannot be undone.</p>
+              <div class="reject-modal-actions">
+                <button type="button" class="btn-secondary" id="clear-cancel">Cancel</button>
+                <button type="button" class="btn-primary" id="clear-confirm">Download Backup &amp; Clear</button>
+              </div>
+            `;
+
+            backdrop.appendChild(modal);
+            document.body.appendChild(backdrop);
+
+            const cancelBtn = modal.querySelector('#clear-cancel');
+            const confirmBtn = modal.querySelector('#clear-confirm');
+
+            function closeModal() {
+                document.body.removeChild(backdrop);
+            }
+
+            cancelBtn.addEventListener('click', () => {
+                closeModal();
+            });
+
+            backdrop.addEventListener('click', (evt) => {
+                if (evt.target === backdrop) {
+                    closeModal();
+                }
+            });
+
+            confirmBtn.addEventListener('click', async () => {
+                confirmBtn.disabled = true;
+
+                try {
+                    // 1) Export current applications
+                    const exportData = await apiFetch('/partner-applications/export');
+                    const applications = exportData.applications || [];
+
+                    // 2) Trigger JSON download in the browser
+                    const blob = new Blob([JSON.stringify(applications, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                    a.href = url;
+                    a.download = `partner_applications_backup_${ts}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    // 3) Clear all applications via API
+                    await apiFetch('/partner-applications', { method: 'DELETE' });
+
+                    showToast('All applications cleared. Backup downloaded.', 'success');
+                    closeModal();
+                    loadApplications();
+                } catch (err) {
+                    confirmBtn.disabled = false;
+                    showToast(err.message || 'Error clearing applications.', 'error');
+                }
+            });
+        }
+
+        async function handleActionClick(e) {
+            const btn = e.currentTarget;
+            const id = btn.getAttribute('data-id');
+            const action = btn.getAttribute('data-action');
+
+            try {
+                btn.disabled = true;
+
+                if (action === 'approve') {
+                    await apiFetch(`/partner-applications/${id}/approve`, { method: 'POST' });
+                    showToast('Application approved.', 'success');
+                } else if (action === 'reject') {
+                    openRejectModal(id);
+                    return;
+                }
+
+                loadApplications();
+            } catch (err) {
+                showToast(err.message || 'Action failed.', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function setActiveTab(status) {
+            currentStatus = status;
+            tabs.forEach(tab => {
+                tab.classList.toggle('active', tab.getAttribute('data-status') === status);
+            });
+            // Show filters only for application views
+            if (status === 'pending' || status === 'approved' || status === 'rejected') {
+                filtersBar.style.display = 'flex';
+            } else {
+                filtersBar.style.display = 'none';
+            }
+            loadApplications();
+        }
+
+        adminSigninBtn.addEventListener('click', () => {
+            const token = adminTokenInput.value.trim();
+            if (!token) {
+                showToast('Please enter admin token.', 'error');
+                return;
+            }
+
+            adminToken = token;
+            setAdminUIAuthenticated(true);
+            showToast('Admin session active.', 'success');
+            setActiveTab('pending');
+        });
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const status = tab.getAttribute('data-status');
+                setActiveTab(status);
+            });
+        });
+
+        refreshBtn.addEventListener('click', loadApplications);
+
+        clearAllBtn.addEventListener('click', openClearAllModal);
+
+        setAdminUIAuthenticated(false);
+    </script>
+</body>
+
+</html>

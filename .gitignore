@@ -1,0 +1,30 @@
+# Node dependencies
+node_modules/
+
+# Environment & secrets
+.env
+*.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Build artifacts
+/dist/
+/build/
+.tmp/
+
+# Misc
+coverage/
+.cache/

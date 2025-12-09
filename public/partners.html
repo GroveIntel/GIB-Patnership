@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GIB Partner Program | Grove Intelligence Bureau</title>
+  <link rel="stylesheet" href="/css/partners.css" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="https://groveintel.com" class="logo-link">
+        <img src="/assets/img_header_logo.png" alt="Grove Intelligence Bureau" class="logo-image" />
+      </a>
+      <nav class="nav-links">
+        <a href="https://groveintel.com">Home</a>
+        <a href="/partners" class="active">Partner Program</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <h1>Partner With GIB. Earn Monthly Recurring Income.</h1>
+          <p>
+            Share the GIB Monthly Safety & Financial Awareness Brief with your community and
+            earn <strong>35%–50% monthly recurring commissions</strong> for every active
+            subscriber you refer.
+          </p>
+          <a href="/partners/apply" class="btn-primary">Become a Partner</a>
+          <p class="hero-note">Commission starts at 35% and grows as your impact grows.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-light">
+      <div class="container">
+        <h2>Payout Model: 35% / 40% / 50%</h2>
+        <div class="tiers-grid">
+          <div class="tier-card">
+            <h3>Partner</h3>
+            <p class="tier-rate">35% monthly recurring</p>
+            <p>Entry tier for all approved partners. Earn 35% on every active subscriber.</p>
+          </div>
+          <div class="tier-card">
+            <h3>Elite Partner</h3>
+            <p class="tier-rate">40% monthly recurring</p>
+            <p>Unlocked when you consistently drive higher subscriber volume.</p>
+          </div>
+          <div class="tier-card">
+            <h3>Strategic Partner</h3>
+            <p class="tier-rate">50% monthly recurring</p>
+            <p>Reserved for high-performing partners with large, engaged audiences.</p>
+          </div>
+        </div>
+        <ul class="bullets">
+          <li><strong>Performance rewards:</strong> Earnings increase as you grow.</li>
+          <li><strong>Long-term income:</strong> Commissions are recurring while subscribers stay active.</li>
+          <li><strong>Aligned incentives:</strong> You grow as GIB grows.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section-light">
+      <div class="container two-column">
+        <div>
+          <h2>Why Become a GIB Partner?</h2>
+          <ul class="bullets">
+            <li><strong>Earn 35%–50% per subscriber</strong> on the GIB Monthly Brief.</li>
+            <li><strong>Get your own unique tracking link</strong> and partner dashboard (coming in phase two).</li>
+            <li><strong>Share real intelligence</strong> that protects people from scams and digital threats.</li>
+            <li><strong>Align with a mission</strong> focused on safety, awareness, and prevention.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="cta-panel">
+            <h3>Your Network Needs Protection. You Deserve Passive Income.</h3>
+            <p>
+              Apply now to become an official GIB Partner and be part of a global
+              intelligence-driven safety movement.
+            </p>
+            <a href="/partners/apply" class="btn-primary btn-full">Apply to Become a Partner</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-light">
+      <div class="container">
+        <h2>Partner Program FAQ</h2>
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question" type="button">
+              <span>Who can become a GIB Partner?</span>
+              <span class="faq-toggle">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Creators, community leaders, professionals, students, and anyone with an engaged audience who cares
+                about safety and intelligence.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" type="button">
+              <span>How much can I earn?</span>
+              <span class="faq-toggle">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Partners earn between 35% and 50% monthly recurring commission per active subscriber, depending on
+                their performance tier.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" type="button">
+              <span>How are referrals tracked?</span>
+              <span class="faq-toggle">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Each approved partner receives a unique link. All subscribers who join through that link are attributed
+                to that partner.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" type="button">
+              <span>When do I get paid?</span>
+              <span class="faq-toggle">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                Commissions are calculated monthly based on active subscribers and paid out on a regular monthly
+                schedule.
+              </p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" type="button">
+              <span>Is there a cost to join?</span>
+              <span class="faq-toggle">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>
+                No. There is no fee to become a GIB Partner.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; <span id="year"></span> Grove Intelligence Bureau. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach((item) => {
+      const questionBtn = item.querySelector('.faq-question');
+      const answer = item.querySelector('.faq-answer');
+      const toggle = item.querySelector('.faq-toggle');
+
+      answer.style.display = 'none';
+
+      questionBtn.addEventListener('click', () => {
+        const isOpen = answer.style.display === 'block';
+        answer.style.display = isOpen ? 'none' : 'block';
+        toggle.textContent = isOpen ? '+' : '−';
+      });
+    });
+  </script>
+</body>
+
+</html>

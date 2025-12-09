@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apply to Become a GIB Partner</title>
+    <link rel="stylesheet" href="/css/partners.css" />
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="https://groveintel.com" class="logo-link">
+                <img src="/assets/img_header_logo.png" alt="Grove Intelligence Bureau" class="logo-image" />
+            </a>
+            <nav class="nav-links">
+                <a href="https://groveintel.com">Home</a>
+                <a href="/partners" class="active">Partner Program</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="section-light">
+        <div class="container form-container">
+            <h1>GIB Partner Application</h1>
+            <p>
+                Tell us a bit about you and your audience. We review every application to ensure alignment
+                with GIB's mission of safety, awareness, and intelligence.
+            </p>
+
+            <form id="partner-application-form" class="partner-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Full Name<span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email<span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="whatsapp">WhatsApp (optional)</label>
+                        <input type="text" id="whatsapp" name="whatsapp" placeholder="Include country code" />
+                    </div>
+                    <div class="form-group">
+                        <label for="country">Country<span class="required">*</span></label>
+                        <input type="text" id="country" name="country" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="audience">Audience Size (approx.)</label>
+                        <input type="text" id="audience" name="audience" placeholder="e.g. 2,000 followers" />
+                    </div>
+                    <div class="form-group">
+                        <label for="platform">Main Platforms</label>
+                        <input type="text" id="platform" name="platform"
+                            placeholder="e.g. TikTok, Instagram, WhatsApp" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="motivation">Why do you want to become a GIB Partner?<span
+                            class="required">*</span></label>
+                    <textarea id="motivation" name="motivation" rows="5" required></textarea>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="terms" name="terms" required />
+                        <span>
+                            I agree to promote GIB honestly, ethically, and in alignment with its mission.
+                            <span class="required">*</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="submit-btn" disabled>Submit Application</button>
+                    <p id="form-message" class="form-message"></p>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>&copy; <span id="year"></span> Grove Intelligence Bureau. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/partner-apply.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+
+</html>
