@@ -8,7 +8,7 @@ const { Pool } = require('pg');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 // Optional: forward new partner emails to existing landing waitlist endpoint
 const LANDING_WAITLIST_URL = process.env.LANDING_WAITLIST_URL;
