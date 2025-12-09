@@ -1,27 +1,30 @@
 # GIB Partnership Service
 
-Backend service and admin UI for the Grove Intelligence Bureau (GIB) Partner Program.
+This repo contains the backend service and internal admin UI I use to run the Grove Intelligence Bureau (GIB) Partner Program.
 
-This app handles:
+With this app I can:
 
-- Public partner landing page (`/partners`)
-- Partner application form (`/partners/apply`)
-- Admin dashboard for reviewing applications and logs (`/partners/admin`)
-- Integration with MailerLite (via the main `groveintel.com` landing waitlist endpoint)
-- Integration with Tapfiliate for creating/attaching affiliates on approval
-- Postgres persistence for applications and admin logs
+- Expose a public partner landing page (`/partners`).
+- Collect partner applications (`/partners/apply`).
+- Review and manage applications in a secure admin dashboard (`/partners/admin`).
+- Sync approved partners into Tapfiliate as affiliates.
+- Keep an audit log of what happened (and who did what) in Postgres.
 
-## 1. Tech Stack
+## 1. Tech stack
 
-- Node.js + Express
-- PostgreSQL
-- Vanilla HTML/CSS/JS (served from `public/`)
-- Tapfiliate REST API
-- MailerLite (indirectly via `LANDING_WAITLIST_URL`)
+I kept the stack intentionally simple and lightweight:
 
-## 2. Important Files & Folders
+- Node.js + Express for the API and server-side logic.
+- PostgreSQL for durable storage.
+- Vanilla HTML/CSS/JS in `public/` for the three front-end pages.
+- Tapfiliate REST API for affiliate management.
+- MailerLite (indirectly via `LANDING_WAITLIST_URL`) for mailing list onboarding.
 
-- `server.js` – Express app, API routes, Tapfiliate sync logic.
+## 2. Important files & folders
+
+Here are the key pieces I actually care about when I come back to this project:
+
+- `server.js` – Express app, API routes, Tapfiliate sync logic, admin auth.
 - `public/partners.html` – Public partner landing page.
 - `public/partners-apply.html` – Partner application form.
 - `public/partners-admin.html` – Admin dashboard.
@@ -29,9 +32,11 @@ This app handles:
 - `public/js/partner-apply.js` – Client-side form handling for `/partners/apply`.
 - `.env` – Local environment variables (ignored by Git).
 
-## 3. Environment Variables
+## 3. Environment variables
 
-Create a `.env` file (for local dev) with:
+Locally, I use a `.env` file. In production (Render), I set these via the dashboard.
+
+For local dev, create `.env` with:
 
 ```env
 DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<db>
@@ -46,23 +51,23 @@ TAPFILIATE_API_KEY=<tapfiliate-api-key>
 TAPFILIATE_PROGRAM_ID=grove-intelligence-bureau-partners-program
 ```
 
-On Render or other hosting, configure these in the service **Environment** settings instead of committing `.env`.
+On Render or other hosting, I configure these in the service **Environment** settings instead of committing `.env`.
 
-## 4. Database Schema (high level)
+## 4. Database schema (high level)
 
-Two core tables:
+I currently rely on two core tables:
 
 - `partner_applications`
-  - Stores each partner application and its status (`pending`, `approved`, `rejected`).
+  - Each row is a partner application and its status (`pending`, `approved`, `rejected`).
   - Includes contact info, context fields, and `tapfiliate_affiliate_id` (set after approval/sync).
 
 - `admin_logs`
   - Audit log for admin actions (approve/reject/clear/sync).
   - Stores `admin_identifier`, `action`, `application_id`, `details`, `created_at`.
 
-Migrations/DDL are not included here; create tables to match the usage in `server.js`.
+Migrations/DDL aren’t in this repo yet; I create/update tables to match what `server.js` expects.
 
-## 5. Running Locally
+## 5. Running locally
 
 ```bash
 npm install
@@ -70,61 +75,63 @@ npm start
 # server runs on http://localhost:3000
 ```
 
-Then visit:
+Then I use:
 
-- `http://localhost:3000/partners` – Partner landing
-- `http://localhost:3000/partners/apply` – Application form
-- `http://localhost:3000/partners/admin` – Admin (requires `ADMIN_API_TOKEN`)
+- `http://localhost:3000/partners` – Partner landing.
+- `http://localhost:3000/partners/apply` – Application form.
+- `http://localhost:3000/partners/admin` – Admin (requires `ADMIN_API_TOKEN`).
 
-## 6. Admin Flow
+## 6. Admin flow
+
+How I use the admin dashboard day to day:
 
 1. Go to `/partners/admin`.
-2. Enter the `ADMIN_API_TOKEN` and click **Sign in**.
-3. Use tabs to view **Pending**, **Approved**, **Rejected**, **Logs**.
+2. Enter `ADMIN_API_TOKEN` and click **Sign in**.
+3. Use the tabs to switch between **Pending**, **Approved**, **Rejected**, and **Logs**.
 4. On **Pending**:
-   - **Approve** – updates DB, logs the action, and triggers Tapfiliate sync (create affiliate + add to program).
-   - **Reject** – opens a modal to optionally record a rejection reason; logs the action.
-5. **Clear All** (on any tab) – opens a modal that:
+   - **Approve** – updates the DB, logs the action, and triggers Tapfiliate sync (create affiliate + add to program).
+   - **Reject** – opens a modal where I can optionally add a rejection reason; that goes into the admin log.
+5. **Clear All** – opens a modal that:
    - Exports all applications to a downloaded JSON backup.
    - Calls `DELETE /api/partner-applications` to clear the table.
 
-## 7. Tapfiliate Integration (summary)
+## 7. Tapfiliate integration
 
-On approval of an application:
+When I approve an application, the backend walks through this flow:
 
-1. The app ensures `tapfiliate_affiliate_id` column exists.
-2. It loads the application (name + email).
-3. It creates or reuses an affiliate via `POST /1.6/affiliates/`.
-4. It stores the Tapfiliate affiliate ID on the application.
-5. It adds the affiliate to the configured program via `POST /1.6/programs/{program_id}/affiliates/`.
-6. It logs a `tapfiliate_sync` entry in `admin_logs`.
+1. Make sure the `tapfiliate_affiliate_id` column exists on `partner_applications`.
+2. Load the application (name, email, etc.).
+3. Create or reuse an affiliate via `POST /1.6/affiliates/`.
+4. Store the Tapfiliate affiliate ID on the application row.
+5. Add the affiliate to the configured program via `POST /1.6/programs/{program_id}/affiliates/`.
+6. Write a `tapfiliate_sync` entry into `admin_logs` so I can audit what happened later.
 
-Tapfiliate keys and program ID are controlled via env vars.
+Tapfiliate keys and program ID are all controlled by env vars so I can switch environments without code changes.
 
 ## 8. Deployment (Render + GoDaddy)
 
-Typical production setup:
+The production setup I use today looks like this:
 
 1. Push this project to GitHub.
-2. Create a **Web Service** on Render:
+2. Create a **Web Service** on Render, pointed at this repo:
    - Build command: `npm install`
    - Start command: `node server.js` or `npm start`
    - Set all env vars in Render.
-3. Test via the Render URL (e.g. `https://gib-partners.onrender.com/partners`).
+3. Smoke-test via the Render URL (e.g. `https://gib-partners.onrender.com/partners`).
 4. In GoDaddy DNS for `groveintel.com`, add a CNAME:
    - Name: `partners`
-   - Value: your Render hostname (e.g. `gib-partners.onrender.com`).
-5. Once DNS propagates, use:
+   - Value: the Render hostname (e.g. `gib-partners.onrender.com`).
+5. Once DNS propagates, I use:
    - `https://partners.groveintel.com/partners`
    - `https://partners.groveintel.com/partners/apply`
    - `https://partners.groveintel.com/partners/admin`
 
-## 9. Resetting Data Before Go-Live
+## 9. Resetting data before go‑live
 
-To clear test data from production Postgres before launch:
+Right before launch (or whenever I want a clean slate in production), I clear out test data from Postgres:
 
 ```sql
 TRUNCATE TABLE admin_logs, partner_applications RESTART IDENTITY;
 ```
 
-This wipes all applications and logs and resets IDs, so the live system starts clean.
+That wipes all applications and logs and resets the IDs, so real partner data starts from a fresh state.
