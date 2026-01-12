@@ -13,6 +13,7 @@ const PORT = process.env.PORT;
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const partnerPaymentLinkId = process.env.PARTNER_PAYMENT_LINK_ID; // e.g. plink_1SnHlRE9luIeYaIwoBVTCWDJ
 const stripe = stripeSecretKey ? Stripe(stripeSecretKey) : null;
 
 // Optional: forward new partner emails to existing landing waitlist endpoint
@@ -663,6 +664,11 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (r
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
+    if (partnerPaymentLinkId && session.payment_link && session.payment_link !== partnerPaymentLinkId) {
+      // This checkout is for a different product/payment link; ignore for partner creation
+      return res.json({ received: true });
+    }
+
     const customerDetails = session.customer_details || {};
     const email = customerDetails.email;
     const name = customerDetails.name;
