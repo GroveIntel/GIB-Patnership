@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GIB Partner Applications Admin</title>
     <link rel="stylesheet" href="/css/partners.css" />
+    <link rel="icon" type="image/png" href="/Assets/img_header_logo.png" />
+
     <style>
         .admin-wrapper {
             padding: 2.5rem 0;
@@ -218,8 +220,10 @@
             <div class="admin-header">
                 <div>
                     <h1>Partner Applications</h1>
-                    <p class="admin-note">Secure internal view of GIB Partner applications. Approvals will later create
-                        affiliates in Tapfiliate.</p>
+                    <p class="admin-note">
+                        Secure internal view of GIB Partner applications. Approvals will later create
+                        affiliates in Tapfiliate.
+                    </p>
                 </div>
                 <div class="admin-auth" id="admin-auth">
                     <input type="password" id="admin-token-input" placeholder="Admin token" />
@@ -231,14 +235,18 @@
                 <button type="button" class="admin-tab active" data-status="pending">Pending</button>
                 <button type="button" class="admin-tab" data-status="approved">Approved</button>
                 <button type="button" class="admin-tab" data-status="rejected">Rejected</button>
+                <button type="button" class="admin-tab" data-status="partners">Partners</button>
+                <button type="button" class="admin-tab" data-status="earnings">Earnings</button>
                 <button type="button" class="admin-tab" data-status="logs">Logs</button>
                 <button class="btn-secondary" type="button" id="refresh-btn">Refresh</button>
+                <button class="btn-secondary" type="button" id="sync-earnings-btn">Sync earnings</button>
                 <button class="btn-secondary danger" type="button" id="clear-all-btn">Clear All</button>
             </div>
 
             <div class="admin-filters" id="admin-filters" style="display:none;">
                 <input type="text" id="filter-email" placeholder="Filter by email" />
                 <input type="text" id="filter-country" placeholder="Filter by country" />
+                <input type="month" id="filter-period" placeholder="Filter by period" />
             </div>
 
             <div id="admin-table-wrapper"></div>
@@ -258,6 +266,7 @@
         const tableWrapper = document.getElementById('admin-table-wrapper');
         const messageEl = document.getElementById('admin-message');
         const refreshBtn = document.getElementById('refresh-btn');
+        const syncEarningsBtn = document.getElementById('sync-earnings-btn');
         const adminAuth = document.getElementById('admin-auth');
         const adminTabs = document.getElementById('admin-tabs');
         const adminTokenInput = document.getElementById('admin-token-input');
@@ -267,6 +276,7 @@
         const filtersBar = document.getElementById('admin-filters');
         const filterEmailInput = document.getElementById('filter-email');
         const filterCountryInput = document.getElementById('filter-country');
+        const filterPeriodInput = document.getElementById('filter-period');
 
         let currentStatus = 'pending';
         let adminToken = '';
@@ -315,6 +325,141 @@
             tableWrapper.innerHTML = '<p class="admin-note">Loading applications...</p>';
 
             try {
+                if (currentStatus === 'partners') {
+                    const data = await apiFetch('/partners');
+                    const partners = data.partners || [];
+
+                    if (partners.length === 0) {
+                        tableWrapper.innerHTML = '<p class="admin-empty">No partners yet.</p>';
+                        filtersBar.style.display = 'none';
+                        return;
+                    }
+
+                    // enable filters for partners view
+                    filtersBar.style.display = 'flex';
+
+                    const emailFilter = filterEmailInput.value.trim().toLowerCase();
+                    const countryFilter = filterCountryInput.value.trim().toLowerCase();
+
+                    const filtered = partners.filter(p => {
+                        const email = (p.email || '').toLowerCase();
+                        const country = (p.country || '').toLowerCase();
+                        const emailMatch = emailFilter ? email.includes(emailFilter) : true;
+                        const countryMatch = countryFilter ? country.includes(countryFilter) : true;
+                        return emailMatch && countryMatch;
+                    });
+
+                    if (filtered.length === 0) {
+                        tableWrapper.innerHTML = '<p class="admin-empty">No partners match these filters.</p>';
+                        return;
+                    }
+
+                    const rows = filtered.map(p => {
+                        const created = p.created_at ? new Date(p.created_at).toLocaleString() : '';
+                        return `
+                          <tr>
+                            <td>${p.id}</td>
+                            <td>${p.name || ''}<br /><span style="font-size:0.8rem;color:#666;">${p.email || ''}</span></td>
+                            <td>${p.country || ''}</td>
+                            <td>${p.tier || ''}</td>
+                            <td>${created}</td>
+                          </tr>
+                        `;
+                    }).join('');
+
+                    tableWrapper.innerHTML = `
+                      <table class="admin-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Name / Email</th>
+                            <th>Country</th>
+                            <th>Tier</th>
+                            <th>Created</th>
+                          </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                      </table>
+                    `;
+
+                    return;
+                }
+
+                if (currentStatus === 'earnings') {
+                    const selectedPeriod = (filterPeriodInput && filterPeriodInput.value)
+                        ? filterPeriodInput.value
+                        : new Date().toISOString().slice(0, 7);
+
+                    const data = await apiFetch(`/partner-earnings?period=${encodeURIComponent(selectedPeriod)}`);
+                    const earnings = data.earnings || [];
+
+                    if (earnings.length === 0) {
+                        tableWrapper.innerHTML = '<p class="admin-empty">No earnings found for this period.</p>';
+                        filtersBar.style.display = 'none';
+                        return;
+                    }
+
+                    // enable filters for earnings view
+                    filtersBar.style.display = 'flex';
+
+                    const emailFilter = filterEmailInput.value.trim().toLowerCase();
+                    const countryFilter = filterCountryInput.value.trim().toLowerCase();
+
+                    const filtered = earnings.filter(e => {
+                        const email = (e.email || '').toLowerCase();
+                        const country = (e.country || '').toLowerCase();
+                        const emailMatch = emailFilter ? email.includes(emailFilter) : true;
+                        const countryMatch = countryFilter ? country.includes(countryFilter) : true;
+                        return emailMatch && countryMatch;
+                    });
+
+                    if (filtered.length === 0) {
+                        tableWrapper.innerHTML = '<p class="admin-empty">No earnings match these filters.</p>';
+                        return;
+                    }
+
+                    const rows = filtered.map(e => {
+                        const period = e.period ? new Date(e.period).toLocaleDateString() : '';
+                        const ratePct = e.commission_rate != null
+                            ? (Number(e.commission_rate) * 100).toFixed(1) + '%'
+                            : '';
+                        return `
+                          <tr>
+                            <td>${e.id}</td>
+                            <td>${e.name || ''}<br /><span style="font-size:0.8rem;color:#666;">${e.email || ''}</span></td>
+                            <td>${e.country || ''}</td>
+                            <td>${period}</td>
+                            <td>${e.currency || ''}</td>
+                            <td>${e.gross_revenue}</td>
+                            <td>${e.net_revenue}</td>
+                            <td>${ratePct}</td>
+                            <td>${e.commission_amount}</td>
+                          </tr>
+                        `;
+                    }).join('');
+
+                    tableWrapper.innerHTML = `
+                      <table class="admin-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Name / Email</th>
+                            <th>Country</th>
+                            <th>Period</th>
+                            <th>Currency</th>
+                            <th>Gross</th>
+                            <th>Net (after fees)</th>
+                            <th>Rate</th>
+                            <th>Commission</th>
+                          </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                      </table>
+                    `;
+
+                    return;
+                }
+
                 if (currentStatus === 'logs') {
                     const data = await apiFetch('/admin-logs');
                     const logs = data.logs || [];
@@ -590,8 +735,14 @@
             tabs.forEach(tab => {
                 tab.classList.toggle('active', tab.getAttribute('data-status') === status);
             });
-            // Show filters only for application views
-            if (status === 'pending' || status === 'approved' || status === 'rejected') {
+            // Show filters for application, partner, and earnings views
+            if (
+                status === 'pending' ||
+                status === 'approved' ||
+                status === 'rejected' ||
+                status === 'partners' ||
+                status === 'earnings'
+            ) {
                 filtersBar.style.display = 'flex';
             } else {
                 filtersBar.style.display = 'none';
@@ -603,6 +754,7 @@
             const token = adminTokenInput.value.trim();
             if (!token) {
                 showToast('Please enter admin token.', 'error');
+
                 return;
             }
 
@@ -619,10 +771,57 @@
             });
         });
 
+        syncEarningsBtn.addEventListener('click', async () => {
+            if (currentStatus !== 'earnings') {
+                showToast('Switch to the Earnings tab to sync.', 'info');
+                return;
+            }
+
+            const selectedPeriod = (filterPeriodInput && filterPeriodInput.value)
+                ? filterPeriodInput.value
+                : new Date().toISOString().slice(0, 7);
+
+            syncEarningsBtn.disabled = true;
+
+            try {
+                await apiFetch('/partner-earnings/sync', {
+                    method: 'POST',
+                    body: JSON.stringify({ period: selectedPeriod })
+                });
+
+                showToast('Earnings synced for ' + selectedPeriod + '.', 'success');
+                loadApplications();
+            } catch (err) {
+                showToast(err.message || 'Error syncing earnings.', 'error');
+            } finally {
+                syncEarningsBtn.disabled = false;
+            }
+        });
+
+        filterEmailInput.addEventListener('input', () => {
+            if (adminTabs.style.display === 'flex') {
+                loadApplications();
+            }
+        });
+
+        filterCountryInput.addEventListener('input', () => {
+            if (adminTabs.style.display === 'flex') {
+                loadApplications();
+            }
+        });
+
+        if (filterPeriodInput) {
+            // Default to current month
+            filterPeriodInput.value = new Date().toISOString().slice(0, 7);
+            filterPeriodInput.addEventListener('change', () => {
+                if (adminTabs.style.display === 'flex' && currentStatus === 'earnings') {
+                    loadApplications();
+                }
+            });
+        }
+
         refreshBtn.addEventListener('click', loadApplications);
-
         clearAllBtn.addEventListener('click', openClearAllModal);
-
         setAdminUIAuthenticated(false);
     </script>
 </body>
