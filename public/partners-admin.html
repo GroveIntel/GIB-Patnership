@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GIB Partner Applications Admin</title>
+    <title>GIB Partner Program Admin</title>
+
     <link rel="stylesheet" href="/css/partners.css" />
     <link rel="icon" type="image/png" href="/Assets/img_header_logo.png" />
 
@@ -219,12 +220,13 @@
         <div class="container admin-wrapper">
             <div class="admin-header">
                 <div>
-                    <h1>Partner Applications</h1>
+                    <h1>Partner Program Admin</h1>
                     <p class="admin-note">
-                        Secure internal view of GIB Partner applications. Approvals will later create
-                        affiliates in Tapfiliate.
+                        Secure internal view of GIB Partners and earnings created via Stripe subscriptions
+                        and synced from Tapfiliate.
                     </p>
                 </div>
+
                 <div class="admin-auth" id="admin-auth">
                     <input type="password" id="admin-token-input" placeholder="Admin token" />
                     <button class="btn-secondary" type="button" id="admin-signin-btn">Sign in</button>
@@ -232,15 +234,11 @@
             </div>
 
             <div class="admin-tabs" id="admin-tabs" style="display:none;">
-                <button type="button" class="admin-tab active" data-status="pending">Pending</button>
-                <button type="button" class="admin-tab" data-status="approved">Approved</button>
-                <button type="button" class="admin-tab" data-status="rejected">Rejected</button>
-                <button type="button" class="admin-tab" data-status="partners">Partners</button>
+                <button type="button" class="admin-tab active" data-status="partners">Partners</button>
                 <button type="button" class="admin-tab" data-status="earnings">Earnings</button>
                 <button type="button" class="admin-tab" data-status="logs">Logs</button>
                 <button class="btn-secondary" type="button" id="refresh-btn">Refresh</button>
                 <button class="btn-secondary" type="button" id="sync-earnings-btn">Sync earnings</button>
-                <button class="btn-secondary danger" type="button" id="clear-all-btn">Clear All</button>
             </div>
 
             <div class="admin-filters" id="admin-filters" style="display:none;">
@@ -272,13 +270,13 @@
         const adminTokenInput = document.getElementById('admin-token-input');
         const adminSigninBtn = document.getElementById('admin-signin-btn');
         const tabs = document.querySelectorAll('.admin-tab');
-        const clearAllBtn = document.getElementById('clear-all-btn');
         const filtersBar = document.getElementById('admin-filters');
         const filterEmailInput = document.getElementById('filter-email');
         const filterCountryInput = document.getElementById('filter-country');
         const filterPeriodInput = document.getElementById('filter-period');
 
-        let currentStatus = 'pending';
+        let currentStatus = 'partners';
+
         let adminToken = '';
 
         function showToast(message, type = 'info') {
@@ -290,11 +288,9 @@
             if (isAuthed) {
                 adminAuth.style.display = 'none';
                 adminTabs.style.display = 'flex';
-                // filters visibility is controlled by setActiveTab
             } else {
                 adminAuth.style.display = 'flex';
                 adminTabs.style.display = 'none';
-                // hide filters when not authenticated
                 filtersBar.style.display = 'none';
                 tableWrapper.innerHTML = '';
             }
@@ -322,7 +318,7 @@
 
         async function loadApplications() {
             messageEl.textContent = '';
-            tableWrapper.innerHTML = '<p class="admin-note">Loading applications...</p>';
+            tableWrapper.innerHTML = '<p class="admin-note">Loading data...</p>';
 
             try {
                 if (currentStatus === 'partners') {
@@ -335,7 +331,6 @@
                         return;
                     }
 
-                    // enable filters for partners view
                     filtersBar.style.display = 'flex';
 
                     const emailFilter = filterEmailInput.value.trim().toLowerCase();
@@ -399,7 +394,6 @@
                         return;
                     }
 
-                    // enable filters for earnings view
                     filtersBar.style.display = 'flex';
 
                     const emailFilter = filterEmailInput.value.trim().toLowerCase();
@@ -417,6 +411,16 @@
                         tableWrapper.innerHTML = '<p class="admin-empty">No earnings match these filters.</p>';
                         return;
                     }
+
+                    const totals = filtered.reduce((acc, e) => {
+                        const gross = Number(e.gross_revenue || 0);
+                        const net = Number(e.net_revenue || 0);
+                        const commission = Number(e.commission_amount || 0);
+                        acc.gross += Number.isNaN(gross) ? 0 : gross;
+                        acc.net += Number.isNaN(net) ? 0 : net;
+                        acc.commission += Number.isNaN(commission) ? 0 : commission;
+                        return acc;
+                    }, { gross: 0, net: 0, commission: 0 });
 
                     const rows = filtered.map(e => {
                         const period = e.period ? new Date(e.period).toLocaleDateString() : '';
@@ -439,6 +443,7 @@
                     }).join('');
 
                     tableWrapper.innerHTML = `
+                      <p class="admin-note">Period totals – Gross: ${totals.gross.toFixed(2)}, Net: ${totals.net.toFixed(2)}, Commissions: ${totals.commission.toFixed(2)}</p>
                       <table class="admin-table">
                         <thead>
                           <tr>
@@ -503,230 +508,9 @@
                     `;
                     return;
                 }
-
-                const data = await apiFetch(`/partner-applications/${currentStatus}`);
-                let apps = data.applications || [];
-
-                // Apply simple client-side filters for email and country
-                const emailFilter = filterEmailInput.value.trim().toLowerCase();
-                const countryFilter = filterCountryInput.value.trim().toLowerCase();
-
-                if (emailFilter || countryFilter) {
-                    apps = apps.filter(app => {
-                        const emailMatch = emailFilter ? (app.email || '').toLowerCase().includes(emailFilter) : true;
-                        const countryMatch = countryFilter ? (app.country || '').toLowerCase().includes(countryFilter) : true;
-                        return emailMatch && countryMatch;
-                    });
-                }
-
-                if (apps.length === 0) {
-                    tableWrapper.innerHTML = `<p class="admin-empty">No ${currentStatus} applications.</p>`;
-                    return;
-                }
-
-                const rows = apps.map(app => {
-                    const submitted = new Date(app.created_at).toLocaleString();
-                    const approved = app.approved_at ? new Date(app.approved_at).toLocaleString() : '';
-                    const statusBadge = `<span class="badge-pending">${app.status}</span>`;
-
-                    let actions = '';
-                    if (currentStatus === 'pending') {
-                        actions = `
-                          <div class="admin-actions">
-                            <button class="btn-primary" type="button" data-action="approve" data-id="${app.id}">Approve</button>
-                            <button class="btn-secondary danger" type="button" data-action="reject" data-id="${app.id}">Reject</button>
-                          </div>
-                        `;
-                    }
-
-                    return `
-                      <tr>
-                        <td>${app.id}</td>
-                        <td>${app.name}<br /><span style="font-size:0.8rem;color:#666;">${app.email}</span></td>
-                        <td>${app.country || ''}</td>
-                        <td>${app.platform || ''}</td>
-                        <td>${submitted}</td>
-                        <td>${approved}</td>
-                        <td>${statusBadge}</td>
-                        <td>${actions}</td>
-                      </tr>
-                    `;
-                }).join('');
-
-                tableWrapper.innerHTML = `
-                  <table class="admin-table">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Name / Email</th>
-                        <th>Country</th>
-                        <th>Platforms</th>
-                        <th>Submitted</th>
-                        <th>Approved / Updated</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                  </table>
-                `;
-
-                const actionButtons = tableWrapper.querySelectorAll('[data-action]');
-                actionButtons.forEach(btn => {
-                    btn.addEventListener('click', handleActionClick);
-                });
             } catch (err) {
                 showToast(err.message || 'Error loading applications.', 'error');
                 tableWrapper.innerHTML = '';
-            }
-        }
-
-        function openRejectModal(applicationId) {
-            const backdrop = document.createElement('div');
-            backdrop.className = 'reject-modal-backdrop';
-
-            const modal = document.createElement('div');
-            modal.className = 'reject-modal';
-            modal.innerHTML = `
-              <h2>Reject Application #${applicationId}</h2>
-              <p>You can optionally provide a reason for rejection. This will be stored in the admin log.</p>
-              <textarea id="reject-reason" placeholder="Reason for rejection (optional)"></textarea>
-              <div class="reject-modal-actions">
-                <button type="button" class="btn-secondary" id="reject-cancel">Cancel</button>
-                <button type="button" class="btn-primary" id="reject-confirm">Reject</button>
-              </div>
-            `;
-
-            backdrop.appendChild(modal);
-            document.body.appendChild(backdrop);
-
-            const reasonInput = modal.querySelector('#reject-reason');
-            const cancelBtn = modal.querySelector('#reject-cancel');
-            const confirmBtn = modal.querySelector('#reject-confirm');
-
-            function closeModal() {
-                document.body.removeChild(backdrop);
-            }
-
-            cancelBtn.addEventListener('click', () => {
-                closeModal();
-            });
-
-            backdrop.addEventListener('click', (evt) => {
-                if (evt.target === backdrop) {
-                    closeModal();
-                }
-            });
-
-            confirmBtn.addEventListener('click', async () => {
-                const reason = reasonInput.value.trim();
-                confirmBtn.disabled = true;
-
-                try {
-                    await apiFetch(`/partner-applications/${applicationId}/reject`, {
-                        method: 'POST',
-                        body: JSON.stringify({ reason })
-                    });
-                    showToast('Application rejected.', 'success');
-                    closeModal();
-                    loadApplications();
-                } catch (err) {
-                    confirmBtn.disabled = false;
-                    showToast(err.message || 'Action failed.', 'error');
-                }
-            });
-        }
-
-        function openClearAllModal() {
-            const backdrop = document.createElement('div');
-            backdrop.className = 'reject-modal-backdrop';
-
-            const modal = document.createElement('div');
-            modal.className = 'reject-modal';
-            modal.innerHTML = `
-              <h2>Clear All Applications</h2>
-              <p class="danger-text">This will permanently delete all partner applications.</p>
-              <p>Before deleting, we will download a JSON backup file to your computer. This action cannot be undone.</p>
-              <div class="reject-modal-actions">
-                <button type="button" class="btn-secondary" id="clear-cancel">Cancel</button>
-                <button type="button" class="btn-primary" id="clear-confirm">Download Backup &amp; Clear</button>
-              </div>
-            `;
-
-            backdrop.appendChild(modal);
-            document.body.appendChild(backdrop);
-
-            const cancelBtn = modal.querySelector('#clear-cancel');
-            const confirmBtn = modal.querySelector('#clear-confirm');
-
-            function closeModal() {
-                document.body.removeChild(backdrop);
-            }
-
-            cancelBtn.addEventListener('click', () => {
-                closeModal();
-            });
-
-            backdrop.addEventListener('click', (evt) => {
-                if (evt.target === backdrop) {
-                    closeModal();
-                }
-            });
-
-            confirmBtn.addEventListener('click', async () => {
-                confirmBtn.disabled = true;
-
-                try {
-                    // 1) Export current applications
-                    const exportData = await apiFetch('/partner-applications/export');
-                    const applications = exportData.applications || [];
-
-                    // 2) Trigger JSON download in the browser
-                    const blob = new Blob([JSON.stringify(applications, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    const ts = new Date().toISOString().replace(/[:.]/g, '-');
-                    a.href = url;
-                    a.download = `partner_applications_backup_${ts}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-
-                    // 3) Clear all applications via API
-                    await apiFetch('/partner-applications', { method: 'DELETE' });
-
-                    showToast('All applications cleared. Backup downloaded.', 'success');
-                    closeModal();
-                    loadApplications();
-                } catch (err) {
-                    confirmBtn.disabled = false;
-                    showToast(err.message || 'Error clearing applications.', 'error');
-                }
-            });
-        }
-
-        async function handleActionClick(e) {
-            const btn = e.currentTarget;
-            const id = btn.getAttribute('data-id');
-            const action = btn.getAttribute('data-action');
-
-            try {
-                btn.disabled = true;
-
-                if (action === 'approve') {
-                    await apiFetch(`/partner-applications/${id}/approve`, { method: 'POST' });
-                    showToast('Application approved.', 'success');
-                } else if (action === 'reject') {
-                    openRejectModal(id);
-                    return;
-                }
-
-                loadApplications();
-            } catch (err) {
-                showToast(err.message || 'Action failed.', 'error');
-            } finally {
-                btn.disabled = false;
             }
         }
 
@@ -735,14 +519,7 @@
             tabs.forEach(tab => {
                 tab.classList.toggle('active', tab.getAttribute('data-status') === status);
             });
-            // Show filters for application, partner, and earnings views
-            if (
-                status === 'pending' ||
-                status === 'approved' ||
-                status === 'rejected' ||
-                status === 'partners' ||
-                status === 'earnings'
-            ) {
+            if (status === 'partners' || status === 'earnings') {
                 filtersBar.style.display = 'flex';
             } else {
                 filtersBar.style.display = 'none';
@@ -761,7 +538,7 @@
             adminToken = token;
             setAdminUIAuthenticated(true);
             showToast('Admin session active.', 'success');
-            setActiveTab('pending');
+            setActiveTab('partners');
         });
 
         tabs.forEach(tab => {
@@ -811,7 +588,6 @@
         });
 
         if (filterPeriodInput) {
-            // Default to current month
             filterPeriodInput.value = new Date().toISOString().slice(0, 7);
             filterPeriodInput.addEventListener('change', () => {
                 if (adminTabs.style.display === 'flex' && currentStatus === 'earnings') {
@@ -821,7 +597,6 @@
         }
 
         refreshBtn.addEventListener('click', loadApplications);
-        clearAllBtn.addEventListener('click', openClearAllModal);
         setAdminUIAuthenticated(false);
     </script>
 </body>
