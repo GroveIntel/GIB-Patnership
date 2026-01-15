@@ -35,6 +35,16 @@ const pool = new Pool({
   }
 });
 
+app.post('/api/partners/sync', requireAdmin, async (req, res) => {
+  try {
+    const summary = await syncPartnersFromTapfiliate();
+    return res.status(200).json({ success: true, summary });
+  } catch (err) {
+    console.error('Error syncing partners from Tapfiliate:', err);
+    return res.status(500).json({ success: false, message: 'Error syncing partners from Tapfiliate.' });
+  }
+});
+
 app.get('/api/admin-logs/export', requireAdmin, async (req, res) => {
   try {
     await pool.query(
@@ -360,6 +370,20 @@ async function ensureV2Tables() {
       )`
     );
 
+    // Ensure we can upsert partners by Tapfiliate affiliate id
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_partners_tapfiliate_affiliate_id
+       ON partners(tapfiliate_affiliate_id)`
+    );
+
+    // Ensure newer columns exist for direct Tapfiliate sync (without applications)
+    await pool.query(
+      `ALTER TABLE partners
+         ADD COLUMN IF NOT EXISTS name VARCHAR(255),
+         ADD COLUMN IF NOT EXISTS email VARCHAR(255),
+         ADD COLUMN IF NOT EXISTS country VARCHAR(100)`
+    );
+
     await pool.query(
       `CREATE TABLE IF NOT EXISTS partner_earnings (
         id SERIAL PRIMARY KEY,
@@ -398,6 +422,92 @@ async function ensureV2Tables() {
   } catch (err) {
     console.error('Error ensuring v2 tables exist:', err);
   }
+}
+
+async function syncPartnersFromTapfiliate() {
+  if (!TAPFILIATE_API_KEY || !TAPFILIATE_PROGRAM_ID) {
+    throw new Error('Tapfiliate API not fully configured. Please set TAPFILIATE_API_KEY and TAPFILIATE_PROGRAM_ID.');
+  }
+
+  await ensureV2Tables();
+
+  const allAffiliates = [];
+
+  // Simple pagination: fetch up to 10 pages of affiliates
+  for (let page = 1; page <= 10; page += 1) {
+    const url = new URL('https://api.tapfiliate.com/1.6/affiliates/');
+    url.searchParams.set('program', TAPFILIATE_PROGRAM_ID);
+    url.searchParams.set('page', String(page));
+
+    const res = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Api-Key': TAPFILIATE_API_KEY
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('Tapfiliate affiliates fetch failed:', res.status, text);
+      throw new Error('Failed to fetch affiliates from Tapfiliate.');
+    }
+
+    const pageData = await res.json().catch(() => []);
+    if (!Array.isArray(pageData) || pageData.length === 0) {
+      break;
+    }
+
+    allAffiliates.push(...pageData);
+
+    if (pageData.length < 50) {
+      break;
+    }
+  }
+
+  if (allAffiliates.length === 0) {
+    return { count: 0 };
+  }
+
+  let upserted = 0;
+
+  for (const aff of allAffiliates) {
+    const affiliateId = aff.id || aff.affiliate || aff.affiliate_id;
+    if (!affiliateId) continue;
+
+    const email = aff.email || (aff.user && aff.user.email) || null;
+    const firstname = aff.firstname || (aff.user && aff.user.first_name) || '';
+    const lastname = aff.lastname || (aff.user && aff.user.last_name) || '';
+    const name = `${firstname} ${lastname}`.trim() || null;
+    const country = aff.country || (aff.user && aff.user.country) || null;
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO partners (
+           tapfiliate_affiliate_id,
+           name,
+           email,
+           country
+         )
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (tapfiliate_affiliate_id)
+         DO UPDATE SET
+           name = COALESCE(EXCLUDED.name, partners.name),
+           email = COALESCE(EXCLUDED.email, partners.email),
+           country = COALESCE(EXCLUDED.country, partners.country)
+         RETURNING id`,
+        [String(affiliateId), name, email, country]
+      );
+
+      if (result.rows.length > 0) {
+        upserted += 1;
+      }
+    } catch (err) {
+      console.error('Error upserting partner from Tapfiliate affiliate', affiliateId, err);
+    }
+  }
+
+  return { count: upserted };
 }
 
 async function upsertPartnerEarnings({
@@ -1067,9 +1177,9 @@ app.get('/api/partners', requireAdmin, async (req, res) => {
          p.trolley_recipient_id,
          p.tier,
          p.created_at,
-         pa.name,
-         pa.email,
-         pa.country
+         COALESCE(p.name, pa.name) AS name,
+         COALESCE(p.email, pa.email) AS email,
+         COALESCE(p.country, pa.country) AS country
        FROM partners p
        LEFT JOIN partner_applications pa ON pa.id = p.application_id
        ORDER BY p.created_at DESC`
