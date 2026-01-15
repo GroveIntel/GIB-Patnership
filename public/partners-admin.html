@@ -238,6 +238,7 @@
                 <button type="button" class="admin-tab" data-status="earnings">Earnings</button>
                 <button type="button" class="admin-tab" data-status="logs">Logs</button>
                 <button class="btn-secondary" type="button" id="refresh-btn">Refresh</button>
+                <button class="btn-secondary" type="button" id="sync-partners-btn">Sync partners</button>
                 <button class="btn-secondary" type="button" id="sync-earnings-btn">Sync earnings</button>
             </div>
 
@@ -264,7 +265,9 @@
         const tableWrapper = document.getElementById('admin-table-wrapper');
         const messageEl = document.getElementById('admin-message');
         const refreshBtn = document.getElementById('refresh-btn');
+        const syncPartnersBtn = document.getElementById('sync-partners-btn');
         const syncEarningsBtn = document.getElementById('sync-earnings-btn');
+
         const adminAuth = document.getElementById('admin-auth');
         const adminTabs = document.getElementById('admin-tabs');
         const adminTokenInput = document.getElementById('admin-token-input');
@@ -352,30 +355,30 @@
                     const rows = filtered.map(p => {
                         const created = p.created_at ? new Date(p.created_at).toLocaleString() : '';
                         return `
-                          <tr>
-                            <td>${p.id}</td>
-                            <td>${p.name || ''}<br /><span style="font-size:0.8rem;color:#666;">${p.email || ''}</span></td>
-                            <td>${p.country || ''}</td>
-                            <td>${p.tier || ''}</td>
-                            <td>${created}</td>
-                          </tr>
-                        `;
+                              <tr>
+                                <td>${p.id}</td>
+                                <td>${p.name || ''}<br /><span style="font-size:0.8rem;color:#666;">${p.email || ''}</span></td>
+                                <td>${p.country || ''}</td>
+                                <td>${p.tier || ''}</td>
+                                <td>${created}</td>
+                              </tr>
+                            `;
                     }).join('');
 
                     tableWrapper.innerHTML = `
-                      <table class="admin-table">
-                        <thead>
-                          <tr>
-                            <th>ID</th>
-                            <th>Name / Email</th>
-                            <th>Country</th>
-                            <th>Tier</th>
-                            <th>Created</th>
-                          </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                      </table>
-                    `;
+                          <table class="admin-table">
+                            <thead>
+                              <tr>
+                                <th>ID</th>
+                                <th>Name / Email</th>
+                                <th>Country</th>
+                                <th>Tier</th>
+                                <th>Created</th>
+                              </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                          </table>
+                        `;
 
                     return;
                 }
@@ -428,39 +431,39 @@
                             ? (Number(e.commission_rate) * 100).toFixed(1) + '%'
                             : '';
                         return `
-                          <tr>
-                            <td>${e.id}</td>
-                            <td>${e.name || ''}<br /><span style="font-size:0.8rem;color:#666;">${e.email || ''}</span></td>
-                            <td>${e.country || ''}</td>
-                            <td>${period}</td>
-                            <td>${e.currency || ''}</td>
-                            <td>${e.gross_revenue}</td>
-                            <td>${e.net_revenue}</td>
-                            <td>${ratePct}</td>
-                            <td>${e.commission_amount}</td>
-                          </tr>
-                        `;
+                              <tr>
+                                <td>${e.id}</td>
+                                <td>${e.name || ''}<br /><span style="font-size:0.8rem;color:#666;">${e.email || ''}</span></td>
+                                <td>${e.country || ''}</td>
+                                <td>${period}</td>
+                                <td>${e.currency || ''}</td>
+                                <td>${e.gross_revenue}</td>
+                                <td>${e.net_revenue}</td>
+                                <td>${ratePct}</td>
+                                <td>${e.commission_amount}</td>
+                              </tr>
+                            `;
                     }).join('');
 
                     tableWrapper.innerHTML = `
-                      <p class="admin-note">Period totals – Gross: ${totals.gross.toFixed(2)}, Net: ${totals.net.toFixed(2)}, Commissions: ${totals.commission.toFixed(2)}</p>
-                      <table class="admin-table">
-                        <thead>
-                          <tr>
-                            <th>ID</th>
-                            <th>Name / Email</th>
-                            <th>Country</th>
-                            <th>Period</th>
-                            <th>Currency</th>
-                            <th>Gross</th>
-                            <th>Net (after fees)</th>
-                            <th>Rate</th>
-                            <th>Commission</th>
-                          </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                      </table>
-                    `;
+                          <p class="admin-note">Period totals – Gross: ${totals.gross.toFixed(2)}, Net: ${totals.net.toFixed(2)}, Commissions: ${totals.commission.toFixed(2)}</p>
+                          <table class="admin-table">
+                            <thead>
+                              <tr>
+                                <th>ID</th>
+                                <th>Name / Email</th>
+                                <th>Country</th>
+                                <th>Period</th>
+                                <th>Currency</th>
+                                <th>Gross</th>
+                                <th>Net (after fees)</th>
+                                <th>Rate</th>
+                                <th>Commission</th>
+                              </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                          </table>
+                        `;
 
                     return;
                 }
@@ -480,32 +483,32 @@
                     const rows = logs.map(log => {
                         const when = new Date(log.created_at).toLocaleString();
                         return `
-                          <tr>
-                            <td>${log.id}</td>
-                            <td>${when}</td>
-                            <td>${log.admin_identifier || ''}</td>
-                            <td>${log.action}</td>
-                            <td>${log.application_id || ''}</td>
-                            <td>${log.details || ''}</td>
-                          </tr>
-                        `;
+                              <tr>
+                                <td>${log.id}</td>
+                                <td>${when}</td>
+                                <td>${log.admin_identifier || ''}</td>
+                                <td>${log.action}</td>
+                                <td>${log.application_id || ''}</td>
+                                <td>${log.details || ''}</td>
+                              </tr>
+                            `;
                     }).join('');
 
                     tableWrapper.innerHTML = `
-                      <table class="admin-table">
-                        <thead>
-                          <tr>
-                            <th>ID</th>
-                            <th>When</th>
-                            <th>Admin</th>
-                            <th>Action</th>
-                            <th>Application ID</th>
-                            <th>Details</th>
-                          </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                      </table>
-                    `;
+                          <table class="admin-table">
+                            <thead>
+                              <tr>
+                                <th>ID</th>
+                                <th>When</th>
+                                <th>Admin</th>
+                                <th>Action</th>
+                                <th>Application ID</th>
+                                <th>Details</th>
+                              </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                          </table>
+                        `;
                     return;
                 }
             } catch (err) {
@@ -548,10 +551,23 @@
             });
         });
 
+        syncPartnersBtn.addEventListener('click', async () => {
+            syncPartnersBtn.disabled = true;
+
+            try {
+                await apiFetch('/partners/sync', { method: 'POST' });
+                showToast('Partners synced from Tapfiliate.', 'success');
+                setActiveTab('partners');
+            } catch (err) {
+                showToast(err.message || 'Error syncing partners.', 'error');
+            } finally {
+                syncPartnersBtn.disabled = false;
+            }
+        });
+
         syncEarningsBtn.addEventListener('click', async () => {
             if (currentStatus !== 'earnings') {
-                showToast('Switch to the Earnings tab to sync.', 'info');
-                return;
+                setActiveTab('earnings');
             }
 
             const selectedPeriod = (filterPeriodInput && filterPeriodInput.value)
